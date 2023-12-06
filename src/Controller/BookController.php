@@ -75,85 +75,100 @@ class BookController extends AbstractController
         $form->handleRequest($request);
 
         if($form->isSubmitted() && $form->isValid()) {
+        //ToDo: add transaction
+
+            $file = $request->files->get('form')['image'];
+            $uploads_dir = $this->getParameter('uploads_directory');
+            $filename = md5(uniqid()) . '.' . $file->guessExtension();
+            $file->move($uploads_dir, $filename);
+
             $newBook = new Book($form->getData());
+            $newBook->setImage($filename);
             $bookRepository->add($newBook, true);
         }
-            return $this->render('book/create.html.twig', [
-                'controller_name' => 'BookController',
-                'form'            => $form->createView(),
-            ]);
-        }
-
-        /**
-         * @Route("/book/{id}", name="book.show")
-         */
-        public
-        function show($id, BookRepository $bookRepository): Response
-        {
-            $book = $bookRepository->find($id);
-            return $this->json($book, 200);
-        }
-
-        /**
-         * @Route("/book/edit/{id}", name="book.edit")
-         */
-        public
-        function edit(Request $request, $id, BookRepository $bookRepository, AuthorRepository $authorRepository): Response
-        {
-            $book = $bookRepository->find($id);
-            $authors = $authorRepository->findAll();
-            $choices = [];
-            foreach ($authors as $author) {
-                $choices[$author->getFirstname()] = $author->getId();
-            }
-            $form = $this->createFormBuilder()
-                ->add('title', TextType::class, [
-                    'label'    => 'Title',
-                    'required' => true,
-                ])
-                ->add('description', TextType::class, [
-                    'label' => 'Description',
-                ])
-                //TODO: Upload image
-                ->add('image', FileType::class, [
-                    'label'       => 'Upload Image (Max Size: 2MB, Allowed Types: .png, .jpg)',
-                    'required'    => false,
-                    'constraints' => [
-                        new File([
-                            'maxSize'          => '2M',
-                            'mimeTypes'        => [
-                                'image/jpeg',
-                                'image/png',
-                            ],
-                            'mimeTypesMessage' => 'Please upload a valid .png or .jpg image',
-                        ]),
-                    ],
-                ])
-                ->add('authors', ChoiceType::class, [
-                    'choices'     => $choices,
-                    'placeholder' => 'Select an option',
-                    'label'       => 'Your Select Field',
-                    'multiple'    => true, // Allow multiple selections
-                    'expanded'    => true, // Render as checkboxes (optional, for a more user-friendly UI)
-                ])
-                ->add('submit', SubmitType::class, [
-                    'label' => 'Submit',
-                ])
-                ->getForm();
-            $form->handleRequest($request);
-            $newData = $form->getData();
-            if($form->isSubmitted() && $form->isValid()) {
-                $book->setTitle($newData['title']);
-                $book->setDescription($newData['description']);
-                $book->setImage($newData['image']);
-//            $book->setAuthors($newData['authors']);
-            }
-
-            return $this->render('author/create.html.twig', [
-                'controller_name' => 'BookController',
-                'form'            => $form->createView(),
-            ]);
-        }
-
-
+        return $this->render('book/create.html.twig', [
+            'controller_name' => 'BookController',
+            'form'            => $form->createView(),
+        ]);
     }
+
+    /**
+     * @Route("/book/{id}", name="book.show")
+     */
+    public
+    function show($id, BookRepository $bookRepository): Response
+    {
+        $book = $bookRepository->find($id);
+        return $this->json($book, 200);
+    }
+
+    /**
+     * @Route("/book/edit/{id}", name="book.edit")
+     */
+    public
+    function edit(Request $request, $id, BookRepository $bookRepository, AuthorRepository $authorRepository): Response
+    {
+        $book = $bookRepository->find($id);
+        $authors = $authorRepository->findAll();
+        $choices = [];
+        foreach ($authors as $author) {
+            $choices[$author->getFirstname()] = $author->getId();
+        }
+        $form = $this->createFormBuilder()
+            ->add('title', TextType::class, [
+                'label'    => 'Title',
+                'required' => true,
+            ])
+            ->add('description', TextType::class, [
+                'label' => 'Description',
+            ])
+            ->add('image', FileType::class, [
+                'label'       => 'Upload Image (Max Size: 2MB, Allowed Types: .png, .jpg)',
+                'required'    => false,
+                'constraints' => [
+                    new File([
+                        'maxSize'          => '2M',
+                        'mimeTypes'        => [
+                            'image/jpeg',
+                            'image/png',
+                        ],
+                        'mimeTypesMessage' => 'Please upload a valid .png or .jpg image',
+                    ]),
+                ],
+            ])
+            ->add('authors', ChoiceType::class, [
+                'choices'     => $choices,
+                'placeholder' => 'Select an option',
+                'label'       => 'Your Select Field',
+                'multiple'    => true, // Allow multiple selections
+                'expanded'    => true, // Render as checkboxes (optional, for a more user-friendly UI)
+            ])
+            ->add('submit', SubmitType::class, [
+                'label' => 'Submit',
+            ])
+            ->getForm();
+        $form->handleRequest($request);
+        $newData = $form->getData();
+
+        if($form->isSubmitted() && $form->isValid()) {
+            $file = $request->files->get('form')['image'];
+            $uploads_dir = $this->getParameter('uploads_directory');
+            $filename = md5(uniqid()) . '.' . $file->guessExtension();
+            $file->move($uploads_dir, $filename);
+
+            $book->setTitle($newData['title']);
+            $book->setDescription($newData['description']);
+            $book->setImage($filename);
+            $book->setDate(new \DateTime('now'));
+//            $book->setAuthors($newData['authors']);
+
+            $bookRepository->add($book, true);
+        }
+
+        return $this->render('author/create.html.twig', [
+            'form'            => $form->createView(),
+        ]);
+    }
+
+
+}

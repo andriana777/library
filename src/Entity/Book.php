@@ -51,10 +51,12 @@ class Book
      */
     private $authors;
 
-    public function __construct()
+    public function __construct(array $data)
     {
+        $this->title =$data['title'];
+        $this->description =$data['description'];
+        $this->date = new \DateTime('now');
         $this->authors = new ArrayCollection();
-//        $this->authors = new Array();
     }
 
     public function getId(): ?int
@@ -118,11 +120,6 @@ class Book
         return $this->authors;
     }
 
-//    public function setAuthors(array $authorIds): Object
-//    {
-//        $this->authors = $authorIds;
-//        return $this;
-//    }
     public function addAuthor(Author $author): self
     {
         if (!$this->authors->contains($author)) {
